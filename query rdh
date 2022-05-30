@@ -1,0 +1,80 @@
+select writer_id, count(*) from mysql.gatsby.episodes d 
+select 
+		c.status, 
+		c.created_at, 
+		d.id, 
+		d.is_writer, 
+		(DATE_FORMAT(CAST(d.joined_at  AS TIMESTAMP), '%Y-%m-%d')) AS "d.joined_at"
+from mysql.gatsby.stories c , mysql.gatsby.users d
+where c.status = 'published' and d.is_writer =1 and writer_id = d.id
+
+select count(*) from mysql.gatsby.stories c 
+where writer_id = 3
+
+select * from mysql.gatsby.users d limit 3
+
+select id, (DATE_FORMAT(CAST(d.joined_at + interval '30' day  AS TIMESTAMP), '%Y-%m-%d')) AS "joined_at+30",
+		(DATE_FORMAT(CAST(d.joined_at AS TIMESTAMP), '%Y-%m-%d')) AS "joined_at"
+from mysql.gatsby.users d 
+	where id = 29240
+
+select * from mysql.gatsby.episodes 
+	where writer_id =8491382
+	order by published_at 
+	group by writer_id
+		having count(*)>1
+
+select avg(cuenta) as promedio from ( 
+select writer_id, count(*) as "cuenta" from (
+select 	c.writer_id as writer_id,
+		(DATE_FORMAT(CAST(c.published_at  AS TIMESTAMP), '%Y-%m-%d')) AS "published_at",
+		d.is_writer, 
+		d.id,
+		(DATE_FORMAT(CAST(d.joined_at + interval '30' day  AS TIMESTAMP), '%Y-%m-%d')) AS "joined_at"
+		from mysql.gatsby.episodes c, mysql.gatsby.users d
+		where  writer_id = d.id and d.is_writer = 1 and published_at <= joined_at)
+		group by writer_id
+		having count(*)>1
+		limit 10)
+		
+select avg(cuenta) as promedio from ( 
+select writer_id, count(*) as "cuenta" from (
+select 	c.writer_id as writer_id,
+		(DATE_FORMAT(CAST(c.created_at  AS TIMESTAMP), '%Y-%m-%d')) AS "created_at",
+		d.is_writer, 
+		d.id,
+		(DATE_FORMAT(CAST(d.joined_at + interval '30' day  AS TIMESTAMP), '%Y-%m-%d')) AS "joined_at"
+		from mysql.gatsby.stories c, mysql.gatsby.users d
+		where  writer_id = d.id and created_at <= joined_at )
+		group by writer_id
+		having count(*)>1
+		limit 10)
+		
+select count(*) as "count",
+		(DATE_FORMAT(CAST(published_at AS TIMESTAMP), '%Y-%m')) AS "published_at"
+		from mysql.gatsby.episodes 
+		group by 2
+		having count(*)>1
+		order by published_at 
+
+select * from (
+select count(distinct writer_id) as "published_users", published_at from (
+select  
+		id,
+		writer_id,
+		(DATE_FORMAT(CAST(published_at AS TIMESTAMP), '%Y-%m')) AS "published_at",
+		count(published_at) as "cuenta"
+		
+		from mysql.gatsby.episodes 
+		group by 1,2,3
+		
+		order by published_at )
+		group by published_at
+		having count(writer_id)>1
+		order by published_at) T1
+FULL OUTER join (	
+select max(id) as "users",
+	(DATE_FORMAT(CAST(created_at AS TIMESTAMP), '%Y-%m')) AS "created_at"
+from mysql.gatsby.episodes group by 2 order by created_at
+
+) T2 on T1.published_at = T2.created_at order by T1.published_at, T2.created_at
